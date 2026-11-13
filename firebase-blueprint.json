@@ -1,0 +1,145 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Catalog product item managed by store admins and displayed to storefront visitors.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name of the product.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "description": "Primary catalog category.",
+          "enum": ["gorras", "camisas", "jeans"]
+        },
+        "categoryLabel": {
+          "type": "string",
+          "description": "Human-readable Spanish category label.",
+          "enum": ["Gorras", "Camisas", "Jeans"]
+        },
+        "price": {
+          "type": "number",
+          "description": "Unit price in Colombian Pesos (COP)."
+        },
+        "sizes": {
+          "type": "array",
+          "description": "Available sizes for this product (bounded up to 15 items)."
+        },
+        "available": {
+          "type": "boolean",
+          "description": "Whether the product is available (true) or out of stock (false)."
+        },
+        "image": {
+          "type": "string",
+          "description": "Product image path, URL, or compressed image data URI.",
+          "minLength": 1,
+          "maxLength": 200000
+        },
+        "description": {
+          "type": "string",
+          "description": "Short product description.",
+          "maxLength": 500
+        },
+        "features": {
+          "type": "array",
+          "description": "Optional list of bullet features (bounded up to 10 items)."
+        },
+        "tag": {
+          "type": "string",
+          "description": "Optional highlight label.",
+          "maxLength": 40
+        },
+        "isExample": {
+          "type": "boolean",
+          "description": "Optional flag indicating reference item."
+        },
+        "sortOrder": {
+          "type": "number",
+          "description": "Numeric ordering priority for catalog display."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when product was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when product was last updated."
+        }
+      },
+      "required": [
+        "name",
+        "category",
+        "categoryLabel",
+        "price",
+        "sizes",
+        "available",
+        "image",
+        "description",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StoreMeta": {
+      "title": "StoreMeta",
+      "description": "Catalog initialization metadata controlled by administrators.",
+      "type": "object",
+      "properties": {
+        "initialized": {
+          "type": "boolean",
+          "description": "Whether the initial catalog has been seeded to Firestore."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of catalog metadata update."
+        }
+      },
+      "required": ["initialized", "updatedAt"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized store administrator registry keyed by Firebase Auth UID.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified administrator email address.",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin"],
+          "description": "Assigned role."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when admin entry was created."
+        }
+      },
+      "required": ["email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Publicly readable store catalog managed exclusively by verified admins."
+    },
+    "/store_meta/{metaId}": {
+      "schema": { "$ref": "#/entities/StoreMeta" },
+      "description": "Publicly readable store initialization metadata managed exclusively by verified admins."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Private admin RBAC registry readable/writable only by verified admins."
+    }
+  }
+}

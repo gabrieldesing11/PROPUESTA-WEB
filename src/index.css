@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --brand-bg: #0B0B0B;
+    --brand-surface: #141414;
+    --brand-surface-elevated: #1B1B1B;
+    --brand-border: #242424;
+    --brand-border-gold: rgba(201, 152, 69, 0.35);
+    --brand-gold: #C99845;
+    --brand-gold-bright: #DFB15B;
+    --brand-green: #25D366;
+    --brand-text-primary: #FAF9F6;
+    --brand-text-secondary: #9E9E9E;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--brand-bg);
+    color: var(--brand-text-primary);
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+/* Glowing buttons & subtle lighting effects */
+.glow-whatsapp {
+  box-shadow: 0 0 22px -3px rgba(37, 211, 102, 0.45);
+}
+.glow-whatsapp:hover {
+  box-shadow: 0 0 28px -1px rgba(37, 211, 102, 0.6);
+}
+
+.glow-gold {
+  box-shadow: 0 0 22px -3px rgba(201, 152, 69, 0.4);
+}
+.glow-gold:hover {
+  box-shadow: 0 0 30px -1px rgba(201, 152, 69, 0.55);
+}
+
+.glow-text-gold {
+  text-shadow: 0 0 18px rgba(223, 177, 91, 0.42), 0 0 6px rgba(201, 152, 69, 0.28);
+}
+
+.glow-border {
+  border-color: rgba(201, 152, 69, 0.35);
+  box-shadow: inset 0 0 15px rgba(201, 152, 69, 0.05);
+}
+
+/* Custom dark scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0B0B0B;
+}
+::-webkit-scrollbar-thumb {
+  background: #242424;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C99845;
+}
+

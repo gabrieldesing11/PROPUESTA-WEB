@@ -1,0 +1,6 @@
+{
+  "name": "J Store Quality - Gorras, Ropa y Accesorios",
+  "description": "Tienda de gorras, ropa y accesorios en Cúcuta, Colombia. Catálogo exclusivo con envíos a todo el país y atención personalizada por WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,171 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'gabrielbovea2828@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll([
+        'name',
+        'category',
+        'categoryLabel',
+        'price',
+        'sizes',
+        'available',
+        'image',
+        'description',
+        'createdAt',
+        'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'name',
+        'category',
+        'categoryLabel',
+        'price',
+        'sizes',
+        'available',
+        'image',
+        'description',
+        'features',
+        'tag',
+        'isExample',
+        'sortOrder',
+        'createdAt',
+        'updatedAt'
+      ])
+      && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+      && data.category in ['gorras', 'camisas', 'jeans']
+      && data.categoryLabel in ['Gorras', 'Camisas', 'Jeans']
+      && (
+        (data.category == 'gorras' && data.categoryLabel == 'Gorras') ||
+        (data.category == 'camisas' && data.categoryLabel == 'Camisas') ||
+        (data.category == 'jeans' && data.categoryLabel == 'Jeans')
+      )
+      && data.price is number && data.price >= 0 && data.price <= 50000000
+      && data.sizes is list && data.sizes.size() >= 1 && data.sizes.size() <= 15
+      && data.sizes[0] is string && data.sizes[0].size() >= 1 && data.sizes[0].size() <= 24
+      && data.available is bool
+      && data.image is string && data.image.size() >= 1 && data.image.size() <= 200000
+      && data.description is string && data.description.size() <= 500
+      && (
+        !('features' in data) ||
+        (data.features is list && data.features.size() <= 10 && (
+          data.features.size() == 0 || (data.features[0] is string && data.features[0].size() <= 150)
+        ))
+      )
+      && (!('tag' in data) || (data.tag is string && data.tag.size() <= 40))
+      && (!('isExample' in data) || data.isExample is bool)
+      && (!('sortOrder' in data) || (data.sortOrder is number && data.sortOrder >= 0 && data.sortOrder <= 100000))
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidStoreMeta(data) {
+      return data.keys().hasAll(['initialized', 'updatedAt'])
+        && data.keys().hasOnly(['initialized', 'updatedAt'])
+        && data.initialized is bool
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAdmin(data) {
+      return data.keys().hasAll(['email', 'role', 'createdAt'])
+        && data.keys().hasOnly(['email', 'role', 'createdAt'])
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 160
+        && data.role == 'admin'
+        && data.createdAt is timestamp;
+    }
+
+    // Storefront public catalog + Admin-only write access
+    match /products/{productId} {
+      allow get: if isValidId(productId);
+      allow list: if resource.data.category in ['gorras', 'camisas', 'jeans'];
+      allow create: if isAdmin()
+        && isValidId(productId)
+        && isValidProduct(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(productId)
+        && isValidProduct(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'name',
+          'category',
+          'categoryLabel',
+          'price',
+          'sizes',
+          'available',
+          'image',
+          'description',
+          'features',
+          'tag',
+          'isExample',
+          'sortOrder',
+          'updatedAt'
+        ]);
+      allow delete: if isAdmin() && isValidId(productId);
+    }
+
+    // Store catalog initialization metadata
+    match /store_meta/{metaId} {
+      allow get: if isValidId(metaId) && metaId == 'catalog';
+      allow create: if isAdmin()
+        && isValidId(metaId)
+        && metaId == 'catalog'
+        && isValidStoreMeta(incoming())
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(metaId)
+        && metaId == 'catalog'
+        && isValidStoreMeta(incoming())
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['initialized', 'updatedAt']);
+    }
+
+    // Private admin RBAC registry
+    match /admins/{adminId} {
+      allow get: if isAdmin() && isValidId(adminId);
+      allow create: if isAdmin()
+        && isValidId(adminId)
+        && isValidAdmin(incoming())
+        && incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // Connection test endpoint
+    match /test/{docId} {
+      allow get: if docId == 'connection';
+    }
+  }
+}
