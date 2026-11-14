@@ -156,9 +156,12 @@ service cloud.firestore {
     // Private admin RBAC registry
     match /admins/{adminId} {
       allow get: if isAdmin() && isValidId(adminId);
-      allow create: if isAdmin()
+      allow create: if isVerifiedUser()
+        && request.auth.token.email == 'gabrielbovea2828@gmail.com'
+        && adminId == request.auth.uid
         && isValidId(adminId)
         && isValidAdmin(incoming())
+        && incoming().email == request.auth.token.email
         && incoming().createdAt == request.time;
       allow update, delete: if false;
     }

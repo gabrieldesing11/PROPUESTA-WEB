@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   User,
   GoogleAuthProvider,
@@ -41,6 +41,8 @@ export interface ProductInput {
   features?: string[];
 }
 
+export type UidRegistrationStatus = 'idle' | 'checking' | 'registered' | 'error';
+
 interface CatalogContextValue {
   products: Product[];
   loadingCatalog: boolean;
@@ -48,6 +50,8 @@ interface CatalogContextValue {
   authUser: User | null;
   authReady: boolean;
   isAdminUser: boolean;
+  uidRegistrationStatus: UidRegistrationStatus;
+  uidRegistrationError: string | null;
   authError: string | null;
   authLoading: boolean;
   seeding: boolean;
@@ -111,9 +115,69 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [isAdminDoc, setIsAdminDoc] = useState(false);
+  const [uidRegistrationStatus, setUidRegistrationStatus] = useState<UidRegistrationStatus>('idle');
+  const [uidRegistrationError, setUidRegistrationError] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [seeding, setSeeding] = useState(false);
+
+  const uidRegistrationPromiseRef = useRef<{ uid: string; promise: Promise<boolean> } | null>(null);
+
+  const ensureAdminUidRegistered = useCallback(async (user: User): Promise<boolean> => {
+    const isPrimaryEmail =
+      Boolean(user.emailVerified) &&
+      user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+    if (!isPrimaryEmail) {
+      return false;
+    }
+
+    if (uidRegistrationPromiseRef.current?.uid === user.uid) {
+      return uidRegistrationPromiseRef.current.promise;
+    }
+
+    const promise = (async () => {
+      setUidRegistrationStatus('checking');
+      setUidRegistrationError(null);
+      try {
+        const adminRef = doc(db, 'admins', user.uid);
+        const adminSnap = await getDoc(adminRef);
+
+        if (!adminSnap.exists()) {
+          await setDoc(adminRef, {
+            email: (user.email || ADMIN_EMAIL).slice(0, 160),
+            role: 'admin',
+            createdAt: serverTimestamp(),
+          });
+        }
+
+        const verifiedSnap = await getDoc(adminRef);
+        if (verifiedSnap.exists()) {
+          setIsAdminDoc(true);
+          setUidRegistrationStatus('registered');
+          return true;
+        }
+
+        setUidRegistrationStatus('error');
+        setUidRegistrationError('No se pudo confirmar el documento en /admins.');
+        return false;
+      } catch (error) {
+        console.error('Error registrando UID de administrador:', error);
+        setUidRegistrationStatus('error');
+        setUidRegistrationError(
+          error instanceof Error ? error.message : 'No se pudo registrar el UID en /admins.'
+        );
+        return false;
+      } finally {
+        if (uidRegistrationPromiseRef.current?.uid === user.uid) {
+          uidRegistrationPromiseRef.current = null;
+        }
+      }
+    })();
+
+    uidRegistrationPromiseRef.current = { uid: user.uid, promise };
+    return promise;
+  }, []);
 
   const isAdminUser = useMemo(() => {
     if (!authUser || !authUser.emailVerified) return false;
@@ -127,7 +191,11 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       setAuthUser(user);
-      if (user && user.emailVerified && user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+      if (user && user.emailVerified && user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        await ensureAdminUidRegistered(user);
+      } else if (user && user.emailVerified) {
+        setUidRegistrationStatus('idle');
+        setUidRegistrationError(null);
         try {
           const adminSnap = await getDoc(doc(db, 'admins', user.uid));
           setIsAdminDoc(adminSnap.exists());
@@ -136,11 +204,13 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
       } else {
         setIsAdminDoc(false);
+        setUidRegistrationStatus('idle');
+        setUidRegistrationError(null);
       }
       setAuthReady(true);
     });
     return () => unsub();
-  }, []);
+  }, [ensureAdminUidRegistered]);
 
   // Listen to catalog initialization flag
   useEffect(() => {
@@ -314,20 +384,24 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         Boolean(user.emailVerified) &&
         user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
-      let hasAdminRecord = false;
-      if (!isPrimaryAdmin && user.emailVerified) {
-        try {
-          const snap = await getDoc(doc(db, 'admins', user.uid));
-          hasAdminRecord = snap.exists();
-        } catch {
-          hasAdminRecord = false;
+      if (isPrimaryAdmin) {
+        await ensureAdminUidRegistered(user);
+      } else {
+        let hasAdminRecord = false;
+        if (user.emailVerified) {
+          try {
+            const snap = await getDoc(doc(db, 'admins', user.uid));
+            hasAdminRecord = snap.exists();
+          } catch {
+            hasAdminRecord = false;
+          }
         }
-      }
 
-      if (!isPrimaryAdmin && !hasAdminRecord) {
-        await signOut(auth);
-        setAuthError('Correo no autorizado. Esta cuenta no tiene acceso al panel de administrador.');
-        return;
+        if (!hasAdminRecord) {
+          await signOut(auth);
+          setAuthError('Correo no autorizado. Esta cuenta no tiene acceso al panel de administrador.');
+          return;
+        }
       }
     } catch (error) {
       console.error('Admin signInWithPopup error:', error);
@@ -360,7 +434,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
       setAuthLoading(false);
     }
-  }, []);
+  }, [ensureAdminUidRegistered]);
 
   const signOutAdmin = useCallback(async () => {
     setAuthError(null);
@@ -467,6 +541,8 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         authUser,
         authReady,
         isAdminUser,
+        uidRegistrationStatus,
+        uidRegistrationError,
         authError,
         authLoading,
         seeding,
