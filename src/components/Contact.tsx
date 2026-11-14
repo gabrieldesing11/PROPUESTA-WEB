@@ -18,7 +18,7 @@ export const Contact: React.FC = () => {
 
   // Quick message builder state
   const [clientName, setClientName] = useState('');
-  const [inquiryType, setInquiryType] = useState('Consultar disponibilidad de gorras');
+  const [inquiryType, setInquiryType] = useState('Precios y cotización de envío nacional');
   const [customNote, setCustomNote] = useState('');
 
   const copyToClipboard = (text: string, fieldId: string) => {
@@ -250,9 +250,6 @@ export const Contact: React.FC = () => {
                     onChange={(e) => setInquiryType(e.target.value)}
                     className="w-full px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#1B1B1B] border border-[#2B2B2B] rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-[#DFB15B] focus:ring-1 focus:ring-[#DFB15B]/30 transition-all"
                   >
-                    <option value="Consultar disponibilidad de gorras">Consultar disponibilidad de gorras</option>
-                    <option value="Consultar catálogo de camisas">Consultar catálogo de camisas</option>
-                    <option value="Consultar disponibilidad de jeans">Consultar disponibilidad de jeans</option>
                     <option value="Precios y cotización de envío nacional">Precios y cotización de envío nacional</option>
                     <option value="Compras por mayor o combos">Compras al por mayor o combos</option>
                     <option value="Visita a la tienda en Cúcuta">Visita a la tienda en Cúcuta</option>
