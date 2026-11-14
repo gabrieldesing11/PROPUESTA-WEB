@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   User,
+  GoogleAuthProvider,
   onAuthStateChanged,
   signInWithPopup,
   signOut,
@@ -286,15 +287,27 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const signInAdmin = useCallback(async (emailHint?: string) => {
     setAuthError(null);
+    const typedEmail = (emailHint || '').trim().toLowerCase();
+
+    if (!typedEmail) {
+      setAuthError('Por favor escribe tu correo electrónico.');
+      return;
+    }
+
+    if (typedEmail !== ADMIN_EMAIL.toLowerCase()) {
+      setAuthError('Correo no autorizado. Esta cuenta no tiene acceso al panel de administrador.');
+      return;
+    }
+
     setAuthLoading(true);
     try {
-      const hint = (emailHint || '').trim();
-      googleProvider.setCustomParameters({
-        ...(hint ? { login_hint: hint } : {}),
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        login_hint: typedEmail,
         prompt: 'select_account',
       });
 
-      const result = await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
       const isPrimaryAdmin =
@@ -313,19 +326,36 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (!isPrimaryAdmin && !hasAdminRecord) {
         await signOut(auth);
-        setAuthError(
-          `El correo ${user.email || 'seleccionado'} no está autorizado como administrador. Usa ${ADMIN_EMAIL}.`
-        );
+        setAuthError('Correo no autorizado. Esta cuenta no tiene acceso al panel de administrador.');
         return;
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.includes('popup-closed-by-user')) {
+      console.error('Admin signInWithPopup error:', error);
+      const authErr = error as { code?: string; message?: string };
+      const code = authErr?.code || '';
+      const message = authErr?.message || String(error);
+
+      if (code === 'auth/popup-closed-by-user' || message.includes('popup-closed-by-user')) {
         setAuthError('Se cerró la ventana de acceso antes de completar el ingreso.');
-      } else if (message.includes('popup-blocked')) {
-        setAuthError('El navegador bloqueó la ventana de Google. Permite ventanas emergentes e intenta de nuevo.');
+      } else if (code === 'auth/cancelled-popup-request' || message.includes('cancelled-popup-request')) {
+        setAuthError('Ya hay una ventana de Google abierta o se canceló la solicitud anterior. Intenta de nuevo.');
+      } else if (code === 'auth/popup-blocked' || message.includes('popup-blocked')) {
+        setAuthError('El navegador bloqueó la ventana emergente de Google. Permite ventanas emergentes o abre el panel en una pestaña nueva.');
+      } else if (code === 'auth/unauthorized-domain' || message.includes('unauthorized-domain')) {
+        const host = typeof window !== 'undefined' ? window.location.hostname : '';
+        setAuthError(
+          `Este dominio (${host}) aún no está autorizado en Firebase Authentication (auth/unauthorized-domain). Agrégalo en Firebase Console → Authentication → Settings → Authorized domains, o ingresa desde la URL de desarrollo.`
+        );
+      } else if (code === 'auth/operation-not-allowed' || message.includes('operation-not-allowed')) {
+        setAuthError(
+          'El inicio de sesión con Google no está activado en Firebase Authentication (auth/operation-not-allowed). Actívalo en Firebase Console → Authentication → Sign-in method.'
+        );
+      } else if (code === 'auth/network-request-failed' || message.includes('network-request-failed')) {
+        setAuthError('Error de red al conectar con Google. Revisa tu conexión e intenta nuevamente.');
       } else {
-        setAuthError('No se pudo iniciar sesión. Intenta nuevamente.');
+        setAuthError(
+          `No se pudo iniciar sesión (${code || 'error inesperado'}). Si estás dentro de una vista previa, prueba abrir el panel en una pestaña nueva.`
+        );
       }
     } finally {
       setAuthLoading(false);

@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { STORE_INFO, STORE_IMAGE_PRESETS, Product, formatCOP } from '../data/products';
 import { useCatalog, ProductInput } from '../context/CatalogContext';
-import { ADMIN_EMAIL } from '../firebase';
 
 interface AdminPanelProps {
   onExitAdmin: () => void;
@@ -555,6 +554,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin }) => {
     authError,
     authLoading,
     seeding,
+    clearAuthError,
     signInAdmin,
     signOutAdmin,
     seedInitialCatalog,
@@ -563,7 +563,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin }) => {
     deleteProduct,
   } = useCatalog();
 
-  const [emailInput, setEmailInput] = useState(ADMIN_EMAIL);
+  const [emailInput, setEmailInput] = useState('');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'gorras' | 'camisas' | 'jeans'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'out'>('all');
@@ -725,18 +725,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin }) => {
                 <input
                   type="email"
                   required
+                  autoComplete="off"
                   value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder={ADMIN_EMAIL}
+                  onChange={(e) => {
+                    setEmailInput(e.target.value);
+                    if (authError) clearAuthError();
+                  }}
+                  placeholder="Escribe tu correo electrónico"
                   className="w-full pl-10 pr-4 py-3 bg-[#1B1B1B] border border-[#2E2E2E] rounded-xl text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:border-[#DFB15B]"
                 />
               </div>
             </div>
 
             {authError && (
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 leading-relaxed">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{authError}</span>
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 leading-relaxed space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{authError}</span>
+                </div>
+                {(authError.includes('unauthorized-domain') ||
+                  authError.includes('operation-not-allowed')) && (
+                  <a
+                    href="https://console.firebase.google.com/project/kempt-gadget-gwpgt/authentication/settings"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block font-semibold text-[#DFB15B] underline hover:text-white"
+                  >
+                    Abrir configuración en Firebase Console →
+                  </a>
+                )}
               </div>
             )}
 
@@ -748,6 +765,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin }) => {
               {authLoading ? 'Verificando acceso...' : 'Ingresar con correo electrónico'}
             </button>
           </form>
+
+          {typeof window !== 'undefined' && window.self !== window.top && (
+            <div className="text-center">
+              <a
+                href={window.location.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-[#DFB15B] hover:text-white transition-colors"
+              >
+                <span>¿Problemas con la ventana de Google? Abrir en pestaña nueva ↗</span>
+              </a>
+            </div>
+          )}
 
           <div className="pt-4 border-t border-[#222222] flex items-center justify-center">
             <button
