@@ -217,20 +217,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onOpenQuickVi
               )}
             </button>
 
-            <a
-              href={whatsappProductUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={
-                isAvailable
-                  ? `Solicitar ${product.name} por WhatsApp`
-                  : `Consultar reposición de ${product.name} por WhatsApp`
-              }
-              aria-label={`Solicitar ${product.name} por WhatsApp`}
-              className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-black inline-flex items-center justify-center shadow-[0_0_14px_rgba(37,211,102,0.4)] hover:shadow-[0_0_20px_rgba(37,211,102,0.65)] transition-all hover:scale-105 active:scale-95"
-            >
-              <WhatsAppLogoIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-            </a>
+            {isAvailable && (
+              <a
+                href={whatsappProductUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`Solicitar ${product.name} por WhatsApp`}
+                aria-label={`Solicitar ${product.name} por WhatsApp`}
+                className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-black inline-flex items-center justify-center shadow-[0_0_14px_rgba(37,211,102,0.4)] hover:shadow-[0_0_20px_rgba(37,211,102,0.65)] transition-all hover:scale-105 active:scale-95"
+              >
+                <WhatsAppLogoIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              </a>
+            )}
           </div>
         </div>
 

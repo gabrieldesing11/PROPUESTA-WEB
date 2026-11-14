@@ -228,15 +228,17 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
                 Ver carrito
               </button>
 
-              <a
-                href={primaryWhatsAppUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-medium text-neutral-300 bg-[#202020] hover:bg-[#282828] border border-[#2E2E2E] rounded-lg transition-colors truncate"
-              >
-                <MessageCircle className="w-3.5 h-3.5 text-[#25D366]" />
-                <span>WhatsApp ({STORE_INFO.primaryWhatsAppRaw})</span>
-              </a>
+              {isAvailable && (
+                <a
+                  href={primaryWhatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-medium text-neutral-300 bg-[#202020] hover:bg-[#282828] border border-[#2E2E2E] rounded-lg transition-colors truncate"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 text-[#25D366]" />
+                  <span>WhatsApp ({STORE_INFO.primaryWhatsAppRaw})</span>
+                </a>
+              )}
             </div>
           </div>
 

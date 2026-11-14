@@ -33,8 +33,8 @@ export const STORE_INFO = {
   tiktokUrl: 'https://www.tiktok.com/@j.store.quality',
   tiktokFollowers: '14.8K',
   tiktokLikes: '211K',
-  instagramUser: '@j.store.quality',
-  instagramUrl: 'https://www.instagram.com/j.store.quality',
+  instagramUser: '@j.storequality',
+  instagramUrl: 'https://www.instagram.com/j.storequality?utm_source=ig_web_button_share_sheet&xtok=ZDNlZDc0MzIxNw==',
   mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Calle+5+%2312-04+San+Martin+Cucuta+Norte+de+Santander',
   schedule: 'Lunes a Sábado: 9:00 AM – 7:30 PM'
 };
