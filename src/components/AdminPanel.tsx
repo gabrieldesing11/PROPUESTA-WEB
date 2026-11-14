@@ -551,8 +551,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin }) => {
     authUser,
     authReady,
     isAdminUser,
-    uidRegistrationStatus,
-    uidRegistrationError,
     authError,
     authLoading,
     seeding,
@@ -816,21 +814,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onExitAdmin }) => {
               <p className="text-[11px] text-neutral-400 truncate">
                 {authUser?.email}
               </p>
-              {uidRegistrationStatus === 'registered' && authUser?.uid && (
-                <p className="text-[11px] text-emerald-400 truncate">
-                  UID registrado en /admins/{authUser.uid}
-                </p>
-              )}
-              {uidRegistrationStatus === 'checking' && (
-                <p className="text-[11px] text-[#DFB15B] truncate">
-                  Registrando UID en /admins...
-                </p>
-              )}
-              {uidRegistrationStatus === 'error' && (
-                <p className="text-[11px] text-red-400 truncate">
-                  No se pudo registrar el UID: {uidRegistrationError}
-                </p>
-              )}
             </div>
           </div>
 

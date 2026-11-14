@@ -139,7 +139,7 @@
     },
     "/admins/{adminId}": {
       "schema": { "$ref": "#/entities/AdminUser" },
-      "description": "Private admin RBAC registry readable/writable only by verified admins."
+      "description": "Private admin RBAC registry keyed by authorized UID (read-only for the matching admin; client writes disabled)."
     }
   }
 }

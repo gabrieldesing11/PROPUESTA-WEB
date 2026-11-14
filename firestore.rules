@@ -28,10 +28,8 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isVerifiedUser() && (
-        request.auth.token.email == 'gabrielbovea2828@gmail.com' ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-      );
+      return isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     function isValidProduct(data) {
@@ -97,14 +95,6 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
-    function isValidAdmin(data) {
-      return data.keys().hasAll(['email', 'role', 'createdAt'])
-        && data.keys().hasOnly(['email', 'role', 'createdAt'])
-        && data.email is string && data.email.size() >= 3 && data.email.size() <= 160
-        && data.role == 'admin'
-        && data.createdAt is timestamp;
-    }
-
     // Storefront public catalog + Admin-only write access
     match /products/{productId} {
       allow get: if isValidId(productId);
@@ -153,17 +143,13 @@ service cloud.firestore {
         && incoming().diff(existing()).affectedKeys().hasOnly(['initialized', 'updatedAt']);
     }
 
-    // Private admin RBAC registry
+    // Private admin RBAC registry (UID-only; client creation, update, and deletion disabled)
     match /admins/{adminId} {
-      allow get: if isAdmin() && isValidId(adminId);
-      allow create: if isVerifiedUser()
-        && request.auth.token.email == 'gabrielbovea2828@gmail.com'
-        && adminId == request.auth.uid
+      allow get: if isVerifiedUser()
         && isValidId(adminId)
-        && isValidAdmin(incoming())
-        && incoming().email == request.auth.token.email
-        && incoming().createdAt == request.time;
-      allow update, delete: if false;
+        && request.auth.uid == adminId
+        && exists(/databases/$(database)/documents/admins/$(adminId));
+      allow create, update, delete: if false;
     }
 
     // Connection test endpoint

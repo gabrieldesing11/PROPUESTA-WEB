@@ -9,8 +9,6 @@ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-export const ADMIN_EMAIL = 'gabrielbovea2828@gmail.com';
-
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
